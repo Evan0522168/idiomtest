@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成語學習助手 (Flashcard & Quiz)</title>
+
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #0f172a;
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+
+    /* Flashcard Styles */
+    .flashcard {
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      background: #fafafa;
+    }
+
+    .idiom-title {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      color: #0f172a;
+    }
+
+    .idiom-meaning {
+      font-size: 18px;
+      color: #334155;
+      background: #eff6ff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary);
+      width: 100%;
+      text-align: left;
+      display: none;
+      margin-top: 10px;
+    }
+
+    .flashcard-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .progress {
+      text-align: center;
+      font-weight: bold;
+      color: var(--text-muted);
+      margin-bottom: 15px;
+    }
+
+    /* Quiz Styles */
+    .quiz-setup {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .quiz-setup select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 15px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .option-btn {
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 8px;
+      text-align: left;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: #f0f7ff;
+    }
+
+    .option-btn.correct {
+      background: #d1fae5 !important;
+      border-color: var(--success) !important;
+      color: #065f46;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong {
+      background: #fee2e2 !important;
+      border-color: var(--danger) !important;
+      color: #991b1b;
+    }
+
+    .hidden { display: none !important; }
+
+    .result-box {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .result-box textarea {
+      margin-top: 15px;
+      height: 150px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>成語學習助手</h1>
+
+  <div class="container">
+    <h3>1. 輸入當次複習清單</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">請輸入要練習的成語（用換行或空格分開），預設已為您載入完整資料庫：</p>
+    <textarea id="listInput" placeholder="請在此輸入成語清單..."></textarea>
+    <button class="btn btn-primary" style="width: 100%;" onclick="loadList()">載入/更新當次清單</button>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchMode('flashcard')">Flashcard 模式</button>
+      <button class="tab-btn" onclick="switchMode('quiz')">Quiz 測驗模式</button>
+    </div>
+
+    <!-- FLASHCARD MODE -->
+    <div id="flashcardMode">
+      <div id="fcContent">
+        <div class="progress" id="fcProgress">進度：0 / 0</div>
+        <div class="flashcard">
+          <div class="idiom-title" id="fcTitle">請先載入清單</div>
+          <div class="idiom-meaning" id="fcMeaning"></div>
+        </div>
+        <div class="flashcard-actions">
+          <button class="btn btn-success" onclick="handleFCAnswer('know')">會了</button>
+          <button class="btn btn-warning" onclick="handleFCAnswer('impression')">有印象</button>
+          <button class="btn btn-danger" onclick="handleFCAnswer('forgot')">忘記了</button>
+        </div>
+      </div>
+
+      <div id="fcResult" class="result-box hidden">
+        <h2>🎉 本次 Flashcard 練習完成！</h2>
+        <p>以下是您選擇「有印象」與「忘記了」的成語清單（已為您移除「會了」）：</p>
+        <textarea id="fcResultOutput" readonly></textarea>
+        <button class="btn btn-primary" onclick="copyResult()">一鍵複製新清單</button>
+        <button class="btn btn-warning" onclick="restartFC()">重新練習本次清單</button>
+      </div>
+    </div>
+
+    <!-- QUIZ MODE -->
+    <div id="quizMode" class="hidden">
+      <div id="quizSetupArea" class="quiz-setup">
+        <label for="quizCount">選擇測驗題數：</label>
+        <select id="quizCount">
+          <option value="10">10 題</option>
+          <option value="20">20 題</option>
+          <option value="30">30 題</option>
+          <option value="50">50 題</option>
+          <option value="100">100 題</option>
+          <option value="all">全部</option>
+        </select>
+        <button class="btn btn-primary" onclick="startQuiz()">開始測驗</button>
+      </div>
+
+      <div id="quizContent" class="hidden">
+        <div class="progress" id="quizProgress">題目：0 / 0</div>
+        <div class="flashcard" style="min-height: 120px;">
+          <div class="idiom-title" id="quizTitle" style="margin-bottom: 0;">--</div>
+        </div>
+        <p style="font-size: 14px; color: var(--text-muted);">請選擇正確的成語解釋：</p>
+        <div class="options-grid" id="quizOptions"></div>
+        <div style="text-align: right; margin-top: 15px;">
+          <button id="nextQuizBtn" class="btn btn-primary hidden" onclick="nextQuizQuestion()">下一題</button>
+        </div>
+      </div>
+
+      <div id="quizResult" class="result-box hidden">
+        <h2>📊 測驗結束！</h2>
+        <p id="quizScoreText" style="font-size: 20px; font-weight: bold; margin: 15px 0;"></p>
+        <button class="btn btn-primary" onclick="resetQuiz()">再測驗一次</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 內建完整成語資料庫
+    const idiomDatabase = {
+      "不見經傳": "經傳中沒有記載。指典章名物沒有出處，或指人不具名氣、沒有名聲。",
+      "之死靡它": "至死也不改變心意。形容誓死不二、極為專一。",
+      "冰肌玉骨": "形容女子肌膚潔白如冰，骨骼精巧如玉，亦常用於形容梅花之潔白高雅。",
+      "侯門如海": "形容王公貴族門第高深，尋常人難以接近；亦指一入權貴之家，舊日情分隔絕。",
+      "想入非非": "形容想法虛幻不切實際，或指思想超越現實（現多指不健康的幻想）。",
+      "借箸代籌": "借用筷子來比喻代為規劃、籌畫策略。",
+      "目不窺園": "形容專心致志於學問，不為外界事物所分心。",
+      "馬革裹屍": "用馬皮包裹屍體。形容英勇作戰，誓死沙場的豪情壯志。",
+      "箕山之志": "指隱居不仕、堅守節操的高潔志向。",
+      "探驪得珠": "比喻文章或言論能抓住要領，寫出精髓；或比喻冒險得寶。",
+      "巴蛇吞象": "比喻人貪婪無厭，欲望過大。",
+      "羊質虎皮": "外表像老虎一樣威猛，內在卻如羊般懦弱。比喻虛有其表。",
+      "首鼠兩端": "形容猶豫不決、動搖不定、觀望不前的樣子。",
+      "城狐社鼠": "比喻憑恃君主或權貴勢力而作惡多端的小人。",
+      "梨園弟子": "指戲曲演員或劇團工作人員。",
+      "插科打諢": "指戲曲演員在表演中穿插滑稽的動作或言語來引人發笑。",
+      "優孟衣冠": "比喻假扮他人或登場演戲；亦指虛有其表、徒具形式。",
+      "珠圓玉潤": "形容歌聲甜潤流利，或文字流暢優美、珠玉般光潤。",
+      "吉光片羽": "比喻殘存極為珍貴的文物、藝術品或文章段落。",
+      "皓首窮經": "鑽研經書直到頭髮白了。形容老而好學、刻苦鑽研。",
+      "食古不化": "學習古代知識卻不能融會貫通、彈性運用。",
+      "末學膚受": "指學問淺薄、僅得皮毛，未得精髓。",
+      "染蒼染黃": "比喻環境或風氣對人的潛移默化，近朱者赤近墨者黑。",
+      "戶樞不蠹": "經常轉動的門軸不會被蟲蛀。比喻經常運動就不易生病，或事物經常運作就不易腐朽。",
+      "見異思遷": "意志不堅定，看到別的事物就改變心意。",
+      "眾議成林": "眾人的議論匯聚如森林。比喻眾口鑠金，輿論力量強大或人多嘴雜。",
+      "群輕折軸": "許多輕微的東西累積起來，也能壓斷車軸。比喻小患不除，積少成多終成大禍。",
+      "積羽沉舟": "羽毛雖輕，積多了也能使船沉沒。比喻微小的壞事或壞人積累多了會產生重大危害。",
+      "積毀銷骨": "眾人的毀謗累積起來，足以使人銷骨毀身。比喻讒言毀謗的威脅極大。",
+      "有腳書櫥": "比喻博覽群書、知識豐富但不會靈活運用的人。",
+      "泰山北斗": "比喻受人尊崇敬仰的高傑人物或學術權威。",
+      "南箕北斗": "箕星和斗星名不副實（箕不能簸揚，斗不能斟酒）。比喻徒有虛名而無實用。",
+      "樗櫟庸材": "比喻無用之材，常用作自謙之詞。",
+      "殫見洽聞": "見識廣博，知識淵博。",
+      "不辨菽麥": "無法辨別豆子和小麥。比喻人愚昧無知或缺乏基本生活常識。",
+      "空谷足音": "在寂靜的山谷裡聽到人的腳步聲。比喻極難得的喜訊、消息或英才。",
+      "扣槃捫燭": "比喻認識片面、未能掌握事物全貌，盲目猜測。",
+      "蕃籬之鷃": "籬笆裡的小鷃雀。比喻見識淺短、眼界狹小的人。",
+      "頭角崢嶸": "形容年輕人才能出眾、不同凡響。",
+      "蕭曹避席": "連蕭何、曹參這樣的賢臣都要避讓三分。形容才能極為卓越。",
+      "存目岑樓": "比喻極相懸殊或以小比大、失其真實。",
+      "判若雲泥": "像天上的雲和地上的泥一樣相差極遠。形容差別極大。",
+      "千金市骨": "花重金購買死馬骨頭。比喻渴望求取賢才的誠意。",
+      "虛左以待": "空著左邊的尊位等待賢能者。比喻留出尊貴職位禮賢下士。",
+      "枕流漱石": "形容隱居山林、高潔不俗的生活；亦指硬要為自己的過錯辯護（漱石枕流）。",
+      "洪喬之誤": "指寄信遺失或未能送達。",
+      "蒲柳之姿": "比喻體質脆弱，容易早衰。",
+      "東山之志": "指退隱山林或再次出山做官的志向。",
+      "不刊之論": "不可磨滅或修改的言論。形容確鑿不移、極具權威的定論。",
+      "文不加點": "寫文章一氣呵成，無須塗改。形容文思敏捷、寫作技巧純熟。",
+      "率爾操觚": "草率地提筆寫作。形容作文章態度輕率，或文字粗糙。",
+      "人面桃花": "形容女子容貌美麗，或感嘆景物依舊而人事已非。",
+      "尺寸千里": "在極小的篇幅或距離中，呈現極遙遠廣闊的景致。",
+      "尺幅千里": "比喻畫卷或文章篇幅雖小，但境界宏大、意涵深遠。",
+      "日居月諸": "感嘆時光流逝。",
+      "日就月將": "每天獲得成就，每月有所進步。形容持續不斷累積進步。",
+      "緣慳分淺": "緣分極為淺薄、缺乏機緣。",
+      "草滿囹圄": "監獄裡長滿野草。比喻社會治安良好，無人犯罪。",
+      "螓首峨眉": "形容女子額頭豐滿、眉毛纖細的美麗容貌。",
+      "逡巡不前": "遲疑不決，不敢前進。",
+      "斗筲之人": "比喻氣量狹小、見識淺短的人。",
+      "綆短汲深": "汲水繩太短，打不到深井的水。比喻能力或才學不足以承擔重任。",
+      "如蟻附羶": "像螞蟻趨附腥臭的東西一樣。比喻趨炎附勢、追逐名利的小人。",
+      "禍起蕭牆": "禍亂發生於內部或家裡。",
+      "怫然作色": "因憤怒而改變面色。",
+      "不分畛域": "不分界限、不存偏見，一視同仁。",
+      "鳴琴垂拱": "無為而治，形容治理國家從容安適、政通人和。",
+      "兵馬倥傯": "形容戰爭頻繁，局勢動盪不安。",
+      "披肝瀝膽": "開誠佈公，展現極大的真誠與忠心。",
+      "深厲淺揭": "比喻做事應根據實際情況彈性處理，不墨守成規。",
+      "黍離麥秀": "感嘆國家滅亡或景物依舊、人事已非的悲傷。",
+      "不忮不求": "不忌妒、不貪求。形容淡泊名利、為人正直。",
+      "踔厲風發": "形容精神振奮、聲勢浩大或文章議論銳利瀟灑。",
+      "春蚓秋蛇": "形容書法筆力軟弱、曲折無力，如蚓蛇爬行。",
+      "鸞翔鳳翥": "形容書法筆勢飛動舒展，或姿態優美高雅。",
+      "裨肉復生": "感嘆久處安逸，功業未建、歲月流逝。",
+      "枵腹從公": "餓著肚子辦理公事。形容勤政敬業。",
+      "按圖索驥": "照圖畫去尋找好馬。比喻辦事拘泥成法、缺乏彈性；或依線索尋找目標。",
+      "引嬰投江": "把嬰兒投進江裡。比喻做事方法錯誤，適得其反或殘害無辜。",
+      "剜肉補瘡": "割下健康的肉來補傷口。比喻只顧眼前，採取有害的臨時救急辦法。",
+      "膠柱鼓瑟": "將瑟上的柱用膠黏住來彈奏。比喻拘泥刻板、不知變通。",
+      "鄭人買履": "比喻墨守成規、只相信條文或經驗而不顧實際情況。",
+      "買履信度": "寧可相信量好的尺碼，也不相信自己的腳。比喻死板固執。",
+      "革故鼎新": "除去舊的，建立新的。比喻重大改革或創新。",
+      "縱橫捭闔": "在政治或外交上運用策略手段，進行聯合或分化。",
+      "折衝樽俎": "在宴席談判中打敗敵人。比喻運用外交手段克敵制勝。",
+      "擘肌分理": "分析事理解剖得極為細緻透徹。",
+      "抱殘守缺": "固執守著殘缺過時的東西，不肯變通創新。",
+      "積穀防饑": "儲存糧食以備荒年。比喻未雨綢繆。",
+      "揚葩振藻": "展現文采，寫出優美的文章。",
+      "錦心繡口": "形容文思優美、詞藻華麗，文筆極佳。",
+      "擲地有聲": "形容文章或言語工整有力、響亮動聽。",
+      "三紙無驢": "寫了三張紙還沒寫到主題（驢字）。比喻文辭贅餘、離題太遠。",
+      "味同嚼蠟": "形容語言、文章或食物枯燥無味。",
+      "佶屈聱牙": "形容文句艱澀生硬，讀起來極不順口。",
+      "尋章謫句": "死讀書、只會在字句上尋找瑕疵，缺乏大局見解。",
+      "連篇累牘": "形容文章或篇幅冗長繁多。",
+      "驢鳴犬吠": "比喻文詞拙劣、沒有價值的言論。",
+      "肥馬輕裘": "騎肥壯的好馬，穿輕軟的皮衣。形容生活極為富裕豪華。",
+      "鮮車怒馬": "車馬華麗，形容生活極其豪奢。",
+      "三旬九食": "三十天只吃九頓飯。形容生活極其貧困窘迫。",
+      "牛衣對泣": "夫妻共蓋牛衣相對哭泣。形容貧賤夫妻生活困頓至極。",
+      "室如懸磬": "家裡貧窮得像懸掛著的磬一樣空無一物。",
+      "納屨踵決": "穿鞋時腳後跟露出來。形容貧困不堪、衣衫藍縷。",
+      "蓬戶甕牖繩樞": "以蓬草為門、破甕為窗、繩子為門軸。形容住房極其簡陋貧窮。",
+      "甑塵釜魚": "炊具積滿灰塵，鍋裡長出魚來。形容長期斷炊、生活極度貧困。",
+      "食前方丈": "吃飯時食物擺滿一丈見方的桌子。形容生活極其奢華。",
+      "鐘鳴鼎食": "吃飯時擊鐘奏樂、列鼎而食。形容權貴人家的奢華生活。",
+      "山肴野蔌": "山中的野味和蔬菜。形容野餐或簡樸的佳餚。",
+      "鴻案相莊": "形容夫妻相敬如賓、和睦融洽。",
+      "肯堂肯構": "子承父業，能繼承並發揚先人的事業。",
+      "繩其祖武": "遵循祖先的足跡與規範。比喻繼承祖業。",
+      "無忝所生": "不辱父母，不辜負父母的養育之恩。",
+      "冬溫夏凊": "冬天溫暖、夏天涼爽。形容子女侍奉父母極為殷勤周到。",
+      "晨昏定省": "早晚向父母侍寢問安。形容孝順父母。",
+      "扇枕溫席": "夏天幫父母扇涼枕頭，冬天用身體溫熱被席。形容極致孝順。",
+      "菽水承歡": "雖然只有豆子和清水等微薄飲食，也能使父母歡喜。形容盡孝。",
+      "兄肥弟瘦": "兄弟間互相代受苦難，情深意重。",
+      "同氣連枝": "比喻手足兄弟骨肉相連、血脈相通。",
+      "伯歌季舞": "哥哥唱歌，弟弟跳舞。形容兄弟和睦融洽。",
+      "灼艾分痛": "比喻兄弟骨肉情深，能分擔痛楚。",
+      "棠棣聯輝": "比喻兄弟皆有成就，互相輝映。",
+      "牛驥同皁": "好馬與牛同槽共食。比喻賢愚不分、賢才受到屈辱。",
+      "蘭艾同焚": "蘭草與艾草一同被焚燒。比喻好壞、善惡同歸於盡。",
+      "薰蕕同器": "香草與臭草放在同一容器。比喻好人與壞人混在一起。",
+      "閹然媚世": "曲意逢迎、討好世俗。",
+      "和光同塵": "不露鋒芒、融入世俗，與世無爭。",
+      "不露鋒芒": "不展現才能或意圖，沉穩內斂。",
+      "不愧屋漏": "即使在私室隱蔽之處也不做壞事。形容光明磊落、恪守道德。",
+      "機關用盡": "用盡一切計謀與心思。",
+      "狐死首丘": "狐狸死時頭朝向出生的山丘。比喻不忘本或懷念故鄉。",
+      "擢髮難數": "拔光頭髮也數不清。形容罪惡極多，數不勝數。",
+      "罪不容誅": "罪大惡極，即使處死也抵償不了其罪過。",
+      "戶限為穿": "門檻被踩破了。形容來訪的人極多。",
+      "項背相望": "前後相連，後人的抬頭能看到前人的頸背。形容人潮擁擠或接連不斷。",
+      "履舄交錯": "鞋子交錯雜亂。形容賓客眾多、熱鬧非凡。",
+      "轂擊肩摩": "車輪互相碰撞，人肩互相摩擦。形容熱鬧擁擠。",
+      "汗牛充棟": "書籍多到用牛運輸會累到流汗，存放會堆滿棟樑。形容藏書極多。",
+      "鳳毛麟角": "比喻稀罕珍貴的人才或事物。",
+      "九牛一毛": "九頭牛身上的一根毛。比喻極其微小、微不足道。",
+      "東海揚塵": "大海變成陸地、揚起灰塵。比喻世事滄桑變化極大。",
+      "石火電光": "擊石產生的火花、天上的閃電。比喻光陰短暫或瞬間即逝。",
+      "虎尾春冰": "踩老虎尾巴，走春天的薄冰。比喻處境極其險惡可怕。",
+      "積薪厝火": "將柴火堆放在火源旁。比喻隱藏著極大的危險。",
+      "燕巢飛幕": "燕子把巢建在帳幕上。比喻處境極其危險，隨時可能毀滅。",
+      "間不容髮": "中間容不下一根頭髮。形容極其危急或精準。",
+      "詩廢蓼莪": "因哀痛父母早逝，不敢再讀《蓼莪》這首詩。比喻喪親之痛。",
+      "風木含悲": "樹欲靜而風不止，子欲養而親不待。比喻父母亡故的哀痛。",
+      "抱痛西河": "指喪子之痛。",
+      "柏舟之痛": "指喪夫之痛（婦人喪夫守節）。",
+      "鼓盆之戚": "指喪妻之痛。",
+      "遽零蒂萼": "比喻幼子或年輕子女早夭。",
+      "梁木其壞": "賢傑或大師之死。",
+      "冰炭異爐": "比喻兩者完全對立，不能相容。",
+      "暗渡陳倉": "比喻用假象掩蓋真實意圖，暗中採取行動。",
+      "江心補漏": "船到江心才修補漏水。比喻臨難才想辦法，為時已晚。",
+      "疾風勁草": "在強風中才看得出堅韌的草。比喻在嚴峻考驗中才能顯出堅貞品質。",
+      "治絲益棼": "整理絲線卻越弄越亂。比喻解決問題方法不對，反而讓情況更混亂。",
+      "懷璧其罪": "懷藏寶玉而招致罪過。比喻因擁有才能或財寶而招致災禍。",
+      "劍及履及": "聽到號令立刻穿鞋佩劍出發。比喻行動迅速、果斷徹底。",
+      "宴安鴆毒": "貪圖安逸如同飲毒酒自殺。比喻貪圖享受會自毀前程。",
+      "見危致命": "遇到國家或正義危難時，願獻出生命。",
+      "怙惡不悛": "堅持作惡，不肯悔改。",
+      "率獸食人": "虐害百姓、殘害人民。",
+      "痌瘝在抱": "將百姓的疾苦放在心上。形容官吏愛民如子。",
+      "拳拳服膺": "態度誠懇地銘記在心並奉行不渝。",
+      "赭衣塞途": "穿刑服的犯人填滿道路。比喻社會動盪、罪犯極多。",
+      "日朘月削": "每天每月都在減少削弱。比喻財富或力量被逐漸剝削摧毀。",
+      "賢賢易色": "尊崇賢德而輕視女色；或重德輕色。",
+      "慮周行果": "思考周密，行動果斷。",
+      "虛位以待": "空著職位等待賢能之人。",
+      "師心自用": "固執己見，自以為是，不接受他人建議。",
+      "米珠薪桂": "米像珍珠一樣貴，柴像桂木一樣貴。形容物價極其昂貴，生活艱難。",
+      "跬步千里": "半步半步地累積，也能走到千里遠。比喻只要堅持不懈就能成功。",
+      "六馬仰秣": "形容歌聲或音樂極其優美動聽，連馬都抬頭聆聽忘記吃草。",
+      "流魚出聽": "游魚浮出水面聆聽。形容音樂優美極具吸引力。",
+      "歧路亡羊": "叉路太多而找不到遺失的羊。比喻事物複雜多變而迷失方向。",
+      "太阿倒持": "把劍柄倒拿給別人。比喻授權於人，自招禍害。",
+      "鄭衛之音": "指淫靡不正當的音樂。",
+      "陽春白雪": "比喻高深典雅、不夠普及的文學藝術作品。",
+      "下里巴人": "比喻通俗民間的文學藝術作品。",
+      "蠅營狗苟": "像蒼蠅般飛竄、像狗般苟偷。比喻不擇手段追逐名利。",
+      "東門黃犬": "悔恨不及，表達對安逸平凡生活的留戀與感嘆。",
+      "衣錦夜行": "穿著華麗衣服在黑夜行走。比喻榮華富貴而不為人知，徒勞無功。",
+      "作壁上觀": "坐在壁壘上看別人交戰。比喻袖手旁觀，不介入其中。",
+      "郭公夏五": "指文字脫漏或文字殘缺。",
+      "名山之業": "能流傳後世的不朽著作。",
+      "振聾發聵": "發出巨大的聲音，使聾子都能聽到。比喻言論驚醒糊塗麻木的人。",
+      "絲蘿托橋": "女子寄託終身於丈夫。",
+      "尸居餘氣": "像屍體般躺著，只剩一口氣。比喻人衰老將死或毫無作為。",
+      "顧盼煒如": "目光目光炯炯有神、神采飛揚。",
+      "龍驤虎步": "像龍般高昂、像虎般威武。形容氣概非凡、威儀顯赫。",
+      "虎嘯風生": "比喻英雄豪傑順應時勢而興起崛起。",
+      "不世之藝": "世間罕見、極卓越的技藝。",
+      "窮形盡相": "形容描寫或刻劃極為生動逼真；亦指醜態畢露。",
+      "諱莫如深": "隱瞞得非常嚴密，不肯透露半點訊息。",
+      "遷客騷人": "被貶官遠調的官員與憂愁感傷的文人。",
+      "斷虀畫粥": "將粥劃開、切鹹菜度日。形容生活貧苦但刻苦勤學。",
+      "浮光躍金": "水面上浮動著金光。形容月光照射下水面波光粼粼的景致。",
+      "雪泥鴻爪": "鴻雁在雪泥上留下的爪印。比喻往事遺留下的痕跡。",
+      "懷瑾握瑜": "懷抱美玉。比喻具備高尚優美的品德與才能。",
+      "濯纓濯足": "比喻受尊崇或受侮辱皆由自己決定；亦指超脫世俗。",
+      "美人遲暮": "比喻年華老去、賢才衰老或不受重用。",
+      "珠落玉盤": "形容聲音清脆悅耳（如琵琶聲或歌聲）。",
+      "形影相弔": "只有自己的軀體和影子互相慰問。形容孤單寂寞到了極點。",
+      "欲辨妄言": "想辨析明白卻知是妄言，意指無需多言。",
+      "卓犖不羈": "才能卓越，性格豪放不羈。",
+      "浮雲白日": "比喻光明磊落的心胸或坦蕩的節操。",
+      "自毀長城": "自己毀壞了自己的防線或支柱。比喻自破陣容或損害自身力量。",
+      "雁足傳書": "比喻傳遞書信。",
+      "天上人間": "比喻境遇或地位相差極大。",
+      "有板有眼": "形容言語行動條理分明、有規有矩。",
+      "粉墨登場": "化妝上台演戲；現多指壞人登上政治舞台。",
+      "千夫所指": "被眾人所指責。形容罪大惡極、公憤極深。",
+      "色厲內荏": "外表嚴厲，內心卻極為軟弱膽怯。",
+      "夏蟲不可以語冰": "比喻見識短淺的人無法理解高深的道理。",
+      "不看僧面看佛面": "指看在第三者的情面上，給予寬恕或優待。",
+      "丁是丁 卯是卯": "形容做事極其認真嚴謹、毫不含糊。",
+      "尺蚓穿堤 能漂一邑": "小小的蚯蚓鑽透堤防，能使整個城邑被淹沒。比喻小患不除將釀成大禍。",
+      "防民之口 甚於防川": "阻止人民言論的危害，比堵塞洪水還要嚴重。指統治者不應壓制民意。",
+      "身在江湖 心懸魏闕": "身在民間隱居，心卻牽掛著朝廷國事。",
+      "明察秋毫 不見輿薪": "能看清秋天鳥獸細毛，卻看不見一整車柴火。比喻只察微末而不見大局。",
+      "失之毫釐 差以千里": "剛開始只差一點點，結果卻造成極大的誤差。",
+      "黃鐘毀棄 瓦釜雷鳴": "賢才被摒棄不用，無能的小人卻佔據要職發號施令。",
+      "磨而不磷 涅而不緇": "磨了不會變薄，染了不會變黑。比喻意志堅定，不受不良環境影響。",
+      "凡事豫則立 不豫則廢": "任何事情事先有準備就能成功，沒有準備就會失敗。",
+      "祸兮福所倚 福兮禍所伏": "禍亂中潛藏著福氣，福氣中隱藏著禍患。比喻禍福相倚、隨時轉化。",
+      "風雨如晦 雞鳴不已": "在風雨交加的黑暗中，公雞依然叫個不停。比喻在亂世中不改君子節操。",
+      "象以齒焚身 蚌以珠剖體": "大象因象牙而遭殺害，蚌因珍珠而被剖開。比喻人因擁有珍寶或才能而招致禍害。",
+      "疑行無名 疑事無功": "行動猶豫不決就不會獲得名聲，做事猶豫不決就不會成功。",
+      "蝮蛇螫手 壯士斷臂": "被毒蛇咬傷手，壯士立刻砍斷手臂。比喻當機立斷、忍痛割愛以保全大局。",
+      "蟬翼為重 千鈞為輕": "輕盈的蟬翼被視為重物，三萬斤的千鈞被視為輕物。比喻賢愚倒置、是非混淆。",
+      "朱轓皂蓋": "紅色的車帷，黑色的車蓋。古代高官貴戚所乘的車馬，形容官位顯赫。"
+    };
+
+    // 預設載入文字
+    document.getElementById('listInput').value = Object.keys(idiomDatabase).join('\n');
+
+    // 全域狀態
+    let currentList = [];
+    let fcIndex = 0;
+    let fcResultList = []; // 包含「有印象」和「忘記了」
+
+    let quizList = [];
+    let quizIndex = 0;
+    let quizScore = 0;
+    let quizTotal = 0;
+
+    // 解析文字框中的成語清單
+    function parseInputList() {
+      const rawText = document.getElementById('listInput').value;
+      const tokens = rawText.split(/[\n,，\s]+/);
+      const list = [];
+      tokens.forEach(t => {
+        const cleaned = t.trim();
+        if (cleaned && idiomDatabase[cleaned]) {
+          if (!list.includes(cleaned)) list.push(cleaned);
+        }
+      });
+      return list;
+    }
+
+    function loadList() {
+      currentList = parseInputList();
+      if (currentList.length === 0) {
+        alert("請輸入有效的成語清單（需包含在預設成語庫中）！");
+        return;
+      }
+      alert(`成功載入 ${currentList.length} 個成語！`);
+      initFC();
+      resetQuiz();
+    }
+
+    function switchMode(mode) {
+      const fcBtn = document.querySelectorAll('.tab-btn')[0];
+      const quizBtn = document.querySelectorAll('.tab-btn')[1];
+      const fcMode = document.getElementById('flashcardMode');
+      const quizMode = document.getElementById('quizMode');
+
+      if (mode === 'flashcard') {
+        fcBtn.classList.add('active');
+        quizBtn.classList.remove('active');
+        fcMode.classList.remove('hidden');
+        quizMode.classList.add('hidden');
+      } else {
+        quizBtn.classList.add('active');
+        fcBtn.classList.remove('active');
+        quizMode.classList.remove('hidden');
+        fcMode.classList.add('hidden');
+      }
+    }
+
+    /* --- FLASHCARD LOGIC --- */
+    function initFC() {
+      if (currentList.length === 0) currentList = parseInputList();
+      fcIndex = 0;
+      fcResultList = [];
+      document.getElementById('fcContent').classList.remove('hidden');
+      document.getElementById('fcResult').classList.add('hidden');
+      showFCCard();
+    }
+
+    function showFCCard() {
+      if (fcIndex >= currentList.length) {
+        // 完成 Flashcard
+        document.getElementById('fcContent').classList.add('hidden');
+        document.getElementById('fcResult').classList.remove('hidden');
+        document.getElementById('fcResultOutput').value = fcResultList.join('\n');
+        return;
+      }
+
+      const idiom = currentList[fcIndex];
+      document.getElementById('fcProgress').innerText = `進度：${fcIndex + 1} / ${currentList.length}`;
+      document.getElementById('fcTitle').innerText = idiom;
+      const meaningEl = document.getElementById('fcMeaning');
+      meaningEl.innerText = idiomDatabase[idiom] || "暫無解釋";
+      meaningEl.style.display = "none";
+    }
+
+    function handleFCAnswer(type) {
+      if (currentList.length === 0) return;
+      const idiom = currentList[fcIndex];
+      const meaningEl = document.getElementById('fcMeaning');
+
+      if (type === 'know') {
+        fcIndex++;
+        showFCCard();
+      } else {
+        // 有印象或忘記了 -> 顯示解釋
+        if (meaningEl.style.display === "block") {
+          // 第二次點擊，進入下一張
+          if (!fcResultList.includes(idiom)) {
+            fcResultList.push(idiom);
+          }
+          fcIndex++;
+          showFCCard();
+        } else {
+          // 第一次點擊，顯示正確意思
+          meaningEl.style.display = "block";
+          if (!fcResultList.includes(idiom)) {
+            fcResultList.push(idiom);
+          }
+        }
+      }
+    }
+
+    function restartFC() {
+      initFC();
+    }
+
+    function copyResult() {
+      const txt = document.getElementById('fcResultOutput');
+      txt.select();
+      document.execCommand('copy');
+      alert("新清單已複製至剪貼簿！");
+    }
+
+    /* --- QUIZ LOGIC --- */
+    function startQuiz() {
+      if (currentList.length === 0) currentList = parseInputList();
+      if (currentList.length < 4) {
+        alert("成語數量不足 4 個，無法進行選擇題測驗！");
+        return;
+      }
+
+      const countVal = document.getElementById('quizCount').value;
+      let count = countVal === 'all' ? currentList.length : parseInt(countVal);
+      count = Math.min(count, currentList.length);
+
+      // 隨機抽題（洗牌）
+      quizList = [...currentList].sort(() => Math.random() - 0.5).slice(0, count);
+      quizIndex = 0;
+      quizScore = 0;
+      quizTotal = quizList.length;
+
+      document.getElementById('quizSetupArea').classList.add('hidden');
+      document.getElementById('quizContent').classList.remove('hidden');
+      document.getElementById('quizResult').classList.add('hidden');
+
+      showQuizQuestion();
+    }
+
+    function showQuizQuestion() {
+      if (quizIndex >= quizTotal) {
+        // 顯示結果
+        document.getElementById('quizContent').classList.add('hidden');
+        document.getElementById('quizResult').classList.remove('hidden');
+        document.getElementById('quizScoreText').innerText = `您的得分：${quizScore} / ${quizTotal} 題 (${Math.round(quizScore/quizTotal*100)}分)`;
+        return;
+      }
+
+      document.getElementById('nextQuizBtn').classList.add('hidden');
+      document.getElementById('quizProgress').innerText = `題目：${quizIndex + 1} / ${quizTotal}`;
+      
+      const currentIdiom = quizList[quizIndex];
+      document.getElementById('quizTitle').innerText = currentIdiom;
+
+      // 產生 4 個選項（1 正確 + 3 隨機干擾）
+      const correctMeaning = idiomDatabase[currentIdiom];
+      const otherIdioms = Object.keys(idiomDatabase).filter(item => item !== currentIdiom);
+      
+      // 洗牌抽取 3 個干擾選項
+      const wrongOptions = otherIdioms.sort(() => Math.random() - 0.5).slice(0, 3).map(key => idiomDatabase[key]);
+      
+      const options = [
+        { text: correctMeaning, isCorrect: true },
+        { text: wrongOptions[0], isCorrect: false },
+        { text: wrongOptions[1], isCorrect: false },
+        { text: wrongOptions[2], isCorrect: false }
+      ].sort(() => Math.random() - 0.5);
+
+      const optionsGrid = document.getElementById('quizOptions');
+      optionsGrid.innerHTML = '';
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt.text;
+        btn.onclick = () => checkQuizAnswer(btn, opt.isCorrect, correctMeaning);
+        optionsGrid.appendChild(btn);
+      });
+    }
+
+    function checkQuizAnswer(selectedBtn, isCorrect, correctMeaning) {
+      const buttons = document.querySelectorAll('#quizOptions .option-btn');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.innerText === correctMeaning) {
+          btn.classList.add('correct');
+        }
+      });
+
+      if (isCorrect) {
+        quizScore++;
+      } else {
+        selectedBtn.classList.add('wrong');
+      }
+
+      document.getElementById('nextQuizBtn').classList.remove('hidden');
+    }
+
+    function nextQuizQuestion() {
+      quizIndex++;
+      showQuizQuestion();
+    }
+
+    function resetQuiz() {
+      document.getElementById('quizSetupArea').classList.remove('hidden');
+      document.getElementById('quizContent').classList.add('hidden');
+      document.getElementById('quizResult').classList.add('hidden');
+    }
+
+    // 初始化頁面
+    window.onload = function() {
+      loadList();
+    };
+  </script>
+</body>
+</html>
