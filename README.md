@@ -21,4 +21,4 @@ Quiz（選擇題測驗模式）
 直接使用任何瀏覽器（Chrome, Edge, Safari, Firefox 等）
 開啟 html 檔案即可開始使用，無需安裝任何軟體或套件。
 
-[http://github.]
+[https://evan0522168.github.io/idiomtest/index.html]
